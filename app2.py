@@ -13,53 +13,55 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.write("サイドバーで N₀・r（負の値可）・K を調整できます。")
+st.write("左メニューで N₀・r（負の値可）・K・t を直接入力して調整できます。")
 
 st.latex(r"\frac{dN}{dt} = rN\left(1-\frac{N}{K}\right)")
 st.latex(r"N_t = \frac{K}{1 + \left(\frac{K-N_0}{N_0}\right)e^{-rt}}")
 
+
 # ---------------------------------------
-# サイドバー
+# サイドバー：number_input に変更
 # ---------------------------------------
 st.sidebar.header("パラメータ設定")
 
-N0 = st.sidebar.slider(
+N0 = st.sidebar.number_input(
     "N₀（初期個体数）",
     min_value=1,
-    max_value=1000,
+    max_value=10000,
     value=100,
-    step=10,
+    step=10
 )
 
-# ★ r の範囲を -1.0 〜 1.0 に変更（負の値を許可）
-r = st.sidebar.slider(
+r = st.sidebar.number_input(
     "r（内的増殖率・負の値可）",
-    min_value=-1.0,
-    max_value=1.0,
+    min_value=-5.0,
+    max_value=5.0,
     value=0.5,
     step=0.01,
+    format="%.3f"
 )
 
-K = st.sidebar.slider(
+K = st.sidebar.number_input(
     "K（環境収容力）",
-    min_value=N0,
-    max_value=5000,
+    min_value=1,
+    max_value=100000,
     value=500,
-    step=50,
+    step=50
 )
 
-t_max = st.sidebar.slider(
+t_max = st.sidebar.number_input(
     "t の最大値（期間）",
     min_value=1,
-    max_value=100,
+    max_value=1000,
     value=10,
-    step=1,
+    step=1
 )
+
 
 # ---------------------------------------
 # 計算：ロジスティックモデル
 # ---------------------------------------
-t_values = list(range(t_max + 1))
+t_values = list(range(int(t_max) + 1))
 A = (K - N0) / N0
 
 N_values = [
@@ -69,11 +71,13 @@ N_values = [
 
 df = pd.DataFrame({"t": t_values, "N": N_values})
 
+
 # ---------------------------------------
 # テーブル表示
 # ---------------------------------------
 st.subheader("計算結果（テーブル）")
 st.dataframe(df.style.format({"N": "{:.3f}"}), use_container_width=True)
+
 
 # ---------------------------------------
 # グラフ（Altair）
