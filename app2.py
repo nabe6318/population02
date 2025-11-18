@@ -20,7 +20,7 @@ st.latex(r"N_t = \frac{K}{1 + \left(\frac{K-N_0}{N_0}\right)e^{-rt}}")
 
 
 # ---------------------------------------
-# サイドバー：number_input に変更
+# サイドバー：number_input
 # ---------------------------------------
 st.sidebar.header("パラメータ設定")
 
@@ -59,15 +59,36 @@ t_max = st.sidebar.number_input(
 
 
 # ---------------------------------------
+# パラメータの妥当性チェック
+# ---------------------------------------
+# 1) r < 0 かつ K < N0 の場合：
+#    連続ロジスティックの理論解の分母が有限時間で 0 になり、
+#    その先で発散・符号反転して「おかしな値」になるため計算を止める
+if r < 0 and K < N0:
+    st.error(
+        "このパラメータの組み合わせ（r < 0 かつ K < N₀）では、"
+        "ロジスティック方程式の理論解の分母が有限時間で 0 になり、"
+        "個体数が発散してしまいます。\n\n"
+        "・r を 0 以上にするか\n"
+        "・K を N₀ 以上にする\n\n"
+        "のいずれかになるように値を調整してください。"
+    )
+    st.stop()  # ここで以降の計算・表示を中止
+
+# ---------------------------------------
 # 計算：ロジスティックモデル
 # ---------------------------------------
 t_values = list(range(int(t_max) + 1))
 A = (K - N0) / N0
 
-N_values = [
-    K / (1.0 + A * math.exp(-r * t))
-    for t in t_values
-]
+N_values = []
+for t in t_values:
+    denom = 1.0 + A * math.exp(-r * t)
+    # 念のため、分母が 0 または負になりそうな場合は None にしておく（表とグラフで欠損扱い）
+    if denom <= 0:
+        N_values.append(None)
+    else:
+        N_values.append(K / denom)
 
 df = pd.DataFrame({"t": t_values, "N": N_values})
 
@@ -84,6 +105,7 @@ st.dataframe(df.style.format({"N": "{:.3f}"}), use_container_width=True)
 # ---------------------------------------
 st.subheader("時間とともに変化する個体数 N のグラフ")
 
+# None が含まれている場合は Altair がその点を自動的に飛ばして描画します
 chart = (
     alt.Chart(df)
     .mark_line()
